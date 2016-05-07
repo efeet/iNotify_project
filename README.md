@@ -10,6 +10,7 @@ for install, just run:
 ./install.sh
 </code>
 
+Is to easy for developer contribution :D.
 
 contact: hack.efeet@gmail.com
 
