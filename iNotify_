@@ -1,0 +1,114 @@
+#!/bin/sh
+#
+# iNotiy Startup script for the Linux iNotify Agent
+#
+# chkconfig: 5 99 01
+# description: Linux iNotify Agent is a event monitor for file/directory.
+#
+# processname: iNotify
+# config: SUSTITUIRconfig
+# pidfile: SUSTITUIRpid
+# logfile: SUSTITUIRlogfile
+# 
+
+iNotify=SUSTITUCIONinstallpath
+prog="iNotifyd"
+config=SUSTITUIRconfig
+user=SUSTITUIRuser
+SUDO=/usr/bin/sudo
+path=SUSTITUCIONpath
+
+pidFile=`grep pidpath ${config} | awk -F= '{ printf $2 }' 2>/dev/null`
+
+# Source function library.
+. /etc/init.d/functions
+
+SETCOLOR_SUCCESS="echo -en \\033[1;32m"
+SETCOLOR_FAILURE="echo -en \\033[1;31m"
+
+start() {
+	echo -n $"Starting $prog: "
+	if [ ! -f $pidFile ]; then
+		if [ -f /sbin/runuser ]
+		then
+			runuser -l $user -c "${SUDO} ${iNotify} -c ${config} &"
+			RETVAL=$?
+		else
+			su - $user -c "${SUDO} ${iNotify} -c ${config} &"
+			RETVAL=$?
+		fi
+		chown -R $user $path
+		if [ $RETVAL -eq 0 ] ; then
+			success
+		else
+			failure
+		fi
+		echo
+	else
+        	pid=`cat ${pidFile} 2>/dev/null`
+		ps -p $pid > /dev/null 2>&1
+        	if [ $? -eq 0 ]; then
+                	echo "${prog} is running."
+        	else
+			rm $pidFile > /dev/null 2>&1
+			start
+        	fi
+	fi
+	return $RETVAL
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	if [ -f $pidFile ]; then
+		if [ -f /sbin/runuser ]; then
+	                runuser -l $user -c "${SUDO} ${iNotify} -k ${config}"
+	                RETVAL=$?
+	        else
+	                su - $user -c "${SUDO} ${iNotify} -k ${config}"
+	                RETVAL=$?
+	        fi
+	        if [ $RETVAL -eq 0 ] ; then
+	                success
+			rm $pidFile > /dev/null 2>&1
+	        else
+			rm $pidFile > /dev/null 2>&1
+	                failure
+	        fi
+	else
+		failure
+	fi
+	echo
+        return $RETVAL
+}
+
+status() {
+	ps -p $pidFile > /dev/null 2>&1
+	if [ $? -eq 0 ]
+	then
+		echo "${prog} is running."
+	else
+		echo "${prog} is not running."
+	fi
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status
+        RETVAL=$?
+        ;;
+  restart)
+        stop
+        start
+        ;;
+  *)
+        echo $"Usage: $prog {start|stop|restart}"
+        RETVAL=2
+esac
+exit $RETVAL
